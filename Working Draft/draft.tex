@@ -1,0 +1,570 @@
+\documentclass[11pt]{article}
+
+\title{Connection Calculi for the Type Inhabitation Problem in Barendregt's Lambda Cube}
+\author{Alexander Pluska}
+
+
+\usepackage{bussproofs}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{wasysym}
+\usepackage{tikz}
+\usetikzlibrary{cd}
+\usetikzlibrary{matrix}
+
+\theoremstyle{definition}
+\newtheorem{theorem}{Theorem}[section]
+\theoremstyle{definition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{lemma}[theorem]{Lemma}
+\theoremstyle{definition}
+\newtheorem{proposition}[theorem]{Proposition}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{definition}
+\newtheorem{example}[theorem]{Example}
+\theoremstyle{definition}
+\newtheorem{remark}[theorem]{Remark}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathcal{E}}
+\newcommand{\A}{\mathbf A}
+\newcommand{\B}{\mathbf B}
+\newcommand{\N}{\mathbb N}
+\newcommand{\fv}{\mathit{fv}}
+\newcommand{\dom}{\mathit{dom}}
+\newcommand{\tvar}{\mathit{TVar}}
+\newcommand{\type}{\ifmmode\Square\else$\Square$\fi}
+\newcommand{\bv}{\mathit{bv}}
+\newcommand{\var}{\mathit{Var}}
+\newcommand{\pos}{\mathit{Pos}}
+\newcommand{\prop}{\mathit{Prop}}
+
+\begin{document}
+    \maketitle
+
+	\section{The untyped lambda calculus}
+
+	Fix a countable set of variables $Var$, usually denoted by $x, x_i, y, z\dots$.
+	
+	\begin{definition}[Terms, free and bound variables]
+		The set of \emph{terms} $\Lambda$, \emph{free} variables $\fv(t)$ and \emph{bound} variables $\bv(t)$ can be defined inductively as follows:
+		\begin{itemize}
+			\item Each $x\in \var$ is a term,\\$\fv(x) = \{x\}$, $\bv(x) = \emptyset$.
+			\item If $x\in \var$ and $t\in\Lambda$
+			then $\lambda x. t\in\Lambda$,\\$\fv(\lambda x. t) = \fv(t)\setminus\{x\}$, $\bv(\lambda x. t) = \bv(t)\cup\{x\}$.
+			\item If $s, t\in\Lambda$ then $s\ t\in\Lambda$,\\$\fv(s\ t) = \fv(s)\cup\fv(t)$, $\bv(s\ t) = \bv(s)\cup\bv(t)$.
+		\end{itemize}
+		The second and third rule are called abstraction and application respectively.
+	\end{definition}
+
+	Application is left associative, i.e. $s\ t\ u$ is short for $(s\ t)\ u$.
+	Abstraction is right associative, i.e. $\lambda x_1\dots \lambda x_n. t$ is short for $\lambda x_1. (\dots (\lambda x_n. t))$. We also write $\lambda x_1\dots\lambda x_n. t$ as $\lambda x_1\dots x_n. t$ or $\lambda \overline{x}. t$.
+
+	Another fundamental notion is that of substitution.
+
+	\begin{definition}[Substitution]
+		For any terms $s, t$ and variable $x$ we define the \emph{substitution} $s[t/x]$ inductively as follows:
+		\begin{itemize}
+			\item $x[t/y] =\begin{cases}
+				t & \text{if } x = y\\
+				x & \text{otherwise}
+			\end{cases}$
+			\item $(s u)[t/x] = (s[t/x])(u[t/x])$
+			\item $(\lambda y. s)[t/x] = \begin{cases}
+				\lambda y. s & \text{if } x = y\\
+				\lambda y. s[t/x] & \text{if } x\neq y \text{ and } y\notin\fv(t)\\
+				\lambda z. s[z/y][t/x] & \text{if } x\neq y \text{ and } y\in\fv(t)
+			\end{cases}$ \\where $z\in \var\setminus(\fv(s)\cup\fv(t))$.
+		\end{itemize}
+	\end{definition}
+
+	Finally, we have all the definitions needed to define semantics. The first point can already be seen in the last rule of the definition above: the renaming of bound variables should not matter.
+
+	\begin{definition}[$\alpha$-equivalence]
+		We say that two terms $s, t$ are $\alpha$-equivalent, written $s\to_\alpha t$, if $t$ can be obtained from $s$ by renaming bound variables. More precisely $\alpha$-equivalence is the smallest equivalence relation satisfying the following rules:
+		\begin{itemize}
+			\item $\lambda x. s \to_\alpha \lambda y. s[y/x]$ for any $y\in \var\setminus\fv(s)$.
+			\item $s\ t \to_\alpha s'\ t'$ if $s=_\alpha s'$ and $t=_\alpha t'$.
+		\end{itemize}
+	\end{definition}
+
+	The second notion is that of $\beta$-reduction, which is a central notion of any lambda calculus and gives it its computational power.
+
+	\begin{definition}[$\beta$-reduction]
+		We say that a term $s$ $\beta$-reduces to a term $t$, written $s\to_\beta t$, if $t$ can be obtained from $s$ by applying the following rules:
+		\begin{itemize}
+			\item $(\lambda x. s)\ t \to_\beta s[t/x]$.
+			\item $s\ t \to_\beta s'\ t$ if $s\to_\beta s'$.
+			\item $s\ t \to_\beta s\ t'$ if $t\to_\beta t'$.
+		\end{itemize}
+		If none of these rules apply we say that $s$ is $\beta$-normal. If there exists a $\beta$-normal term $t$ such that $s\to_\beta t$ we say that $s$ is $\beta$-normalizable and $t$ is its $\beta$-normal form.
+	\end{definition}
+
+	Note that it does not matter in which order these rules are applied, i.e. if there exists a $\beta$-normal form then it is unique. This property is called \emph{confluence}. However, a $\beta$-normal form need not exist, e.g. for $(\lambda x. x\ x)\ (\lambda x. x\ x)$. The untyped lambda calculus is therefore not \emph{strongly normalizing}.
+
+	\section{The simply typed lambda calculus}
+
+	From this point on we also fix a countable set of type variables $\tvar$, usually denoted by $A, A_i, B, C\dots$.
+
+	In addition to the language of terms we introduce a language of types.
+	\begin{definition}[Type]
+		The set of \emph{types} $\type$ is inductively as follows:
+		\begin{itemize}
+			\item Each $A\in \tvar$ is a type, $A\in\type$.
+			\item If $A, B\in\type$ then $A\to B\in\type$.
+		\end{itemize}
+	\end{definition}
+
+	Note the identical definition to the language of formulae in minimal logic. This is not a coincidence, as we will see later. The above definition gives rise to the following typing rules:
+
+	\begin{definition}[Type Assignemnt, Context, Typing Judgement]
+		A \emph{type assignment} is a pair of a term $t$ and a type $T$, written $t: T$. If $t$ is a variable then we also call $t: T$ a \emph{variable assignment}. A \emph{context} $\Gamma$ is a finite set of variable assignments. A \emph{typing judgement} is a pair $(\Gamma, t:T)$ with $\Gamma$ a context and $t:T$ a type assignment. We write $\Gamma\vdash t:T$ and say $(\Gamma, t: T)$ is \emph{well-typed} if it can be derived from the following rules:
+		\begin{center}
+			\AxiomC{$x: T\in\Gamma$}
+			\RightLabel{Var}
+			\UnaryInfC{$\Gamma\vdash x: T$}
+			\DisplayProof
+			\hspace*{1cm}
+			\AxiomC{$\Gamma, x: T\vdash t: U$}
+			\RightLabel{Abs}
+			\UnaryInfC{$\Gamma\vdash \lambda x. t: T\to U$}
+			\DisplayProof
+			\vspace*{.7cm}
+
+			\AxiomC{$\Gamma\vdash x: T\to U$}
+			\AxiomC{$\Gamma\vdash y: T$}
+			\RightLabel{App}
+			\BinaryInfC{$\Gamma\vdash x\ y: T$}
+			\DisplayProof
+		\end{center}
+	\end{definition}
+
+	\begin{example}
+		The following is a derivation of $y: A\vdash (\lambda x. x) y: A$:
+		\begin{center}
+			\AxiomC{}
+			\RightLabel{Var}
+			\UnaryInfC{$x: A, y: A\vdash x: A$}
+			\RightLabel{Abs}
+			\UnaryInfC{$y: A\vdash \lambda x. x: A\to A$}
+			\AxiomC{}
+			\RightLabel{Var}
+			\UnaryInfC{$y: A\vdash y: A$}
+			\RightLabel{App}
+			\BinaryInfC{$y: A\vdash (\lambda x. x)\ y: A$}
+			\DisplayProof
+		\end{center}
+	\end{example}
+
+	Note that there are some terms $t$ which are not well-typed, i.e. there is no context $\Gamma$ and type $A$ such that $\Gamma\vdash t: A$. For example, $x\ x$ is not well-typed. In particular any term with no $\beta$-normal form is not well-typed. This means that the simply typed lambda calculus is strongly normalizing in the sense that for any well-typed term there exists a $\beta$-normal form.
+
+	\begin{definition}[Type Inhabitation Problem]\hfill\\
+		Given a context $x_0: A_0\dots x_n:A_n$ and type $A$ the \emph{type inhabitation problem} asks if there is a term $t$ such that $x_0: A_0\dots x_n:A_n\vdash t: A$. We write
+		\[A_0\to\dots\to A_n\vdash\ ?: A.\]
+	\end{definition}
+	
+	\subsection{The Connection Calculus}
+	Due to the Curry-Howard correspondence the type inhabitation problem is equivalent to the validity problem in implicational minimal logic, that is
+	\[A_0\to\dots\to A_n\vdash\ ?:A\]
+	has a solution if and only if
+	\[A_0\to\dots\to A_n\to A\]
+	is valid. The propositional connection calculus is a sound and complete algorithm for deciding various logics. The presentation here is based on~\cite{kreitz1999connection}.
+
+	Before we proceed we need some definitions.
+	\begin{definition}[Position]\label{def:position}
+		With each formula $\varphi$ we associate a set of binary strings $\pos_\varphi$, called \emph{positions}, inductively as follows:
+		\begin{itemize}
+			\item $\pos_A = \{\varepsilon\}$ for each atomic formula $A$.
+			\item $\pos_{\varphi\to\psi} = \{\varepsilon\}\cup\{0p\mid p\in\pos_\varphi\}\cup\{1p\mid p\in\pos_\psi\}$.
+		\end{itemize}
+		With each position we associate a number of values:
+		\begin{itemize}
+			\item Its \emph{polarity} $\pi(p)$ where $\pi(\varepsilon) = 0$ and $\pi(ip) = \pi(p) \oplus i$ where $\oplus$ is xor.
+			\item Its \emph{propositional type} $\rho(p)$ where $\rho(p) = \rho(\varphi, p)$ and\\$\rho(\varphi, \varepsilon) = \varphi$, $\rho(\varphi_0\to\varphi_1, ip) = \rho(\varphi_i, p)$.
+			\item Its \emph{intuitionistic type} $\iota(p)$, which is a string of constants $c_q$ and variables $y_q$ where $\iota(\varepsilon) = \varepsilon$ and
+			\[\iota(pi) = \begin{cases}
+				\iota(p)c_p & \text{if } \pi(p) = 0\\
+				\iota(p)y_p & \text{if } \pi(p) = 1.
+			\end{cases}\]
+		\end{itemize}
+	\end{definition}
+
+	\begin{example}
+		Consider the formula $((A\to B)\to A)\to(A\to B)\to B$. The set of positions is $\{\varepsilon, 1, 0, 11, 10, 01, 00, 111, 110, 011, 010\}$ and its associated values are:
+		\begin{center}
+		\begin{tabular}{c|c|c|c}
+			&$\pi$&$\rho$&$\iota$\\\hline
+			$\varepsilon$&$0$&$((A\to B)\to A)\to(A\to B)\to B$&$\varepsilon$\\
+			$1$&$1$&$(A\to B)\to A$&$c_\varepsilon$\\
+			$0$&$0$&$(A\to B)\to B$&$c_\varepsilon$\\
+			$11$&$0$&$A\to B$&$c_\varepsilon y_1$\\
+			$10$&$1$&$A$&$c_\varepsilon y_1$\\
+			$01$&$1$&$A\to B$&$c_\varepsilon c_0$\\
+			$00$&$0$&$B$&$c_\varepsilon c_0$\\
+			$111$&$1$&$A$&$c_\varepsilon y_1c_{11}$\\
+			$110$&$0$&$B$&$c_\varepsilon y_1c_{11}$\\
+			$011$&$0$&$A$&$c_\varepsilon c_0y_{01}$\\
+			$010$&$1$&$B$&$c_\varepsilon c_0y_{01}$
+		\end{tabular}
+		\end{center}
+	\end{example}
+
+	\begin{definition}(Multiplicity)
+		Let $\Gamma_\varphi$ be the set of positions $p$ such that the variable $y_p$ occurs in some intuitionistic type. A \emph{multiplicity} is a mapping $\mu: \Gamma_\varphi\to\N$.
+	\end{definition}
+
+	In propositional logic variables don't occur in the propositional type.
+
+	\begin{definition}(Indexed Position)
+		Given a multiplicity, an \emph{indexed position} consists of a position $p$ and for each proper prefix $q$ of $p$ that is in $\Gamma_\varphi$ a number $i$ with $0\leq i<\mu(q)$. We write $i$ as a superscript to $q$. These superscripts are also added to the associated variables. The set of indexed positions is denoted $\pos_\varphi^\mu$. Everything in Definition~\ref{def:position} applies analogously for indexed positions.
+	\end{definition}
+
+	\begin{example}
+		In the above example we have $\Gamma_\iota = \{1, 01\}$. Consider the multiplicity $\mu = \{1\mapsto 1, 01\mapsto 2\}$. Then the indexed positions are $\{\varepsilon, 1, 0, 1^01, 1^00, 01, 00, 1^011, 1^010, 01^01, 01^00, 01^11, 01^10\}$ and its associated values are:
+		\begin{center}
+			\begin{tabular}{c|c|c|c}
+				&$\pi$&$\rho$&$\iota$\\\hline
+				$\varepsilon$&$0$&$((A\to B)\to A)\to(A\to B)\to B$&$\varepsilon$\\
+				$1$&$1$&$(A\to B)\to A$&$c_\varepsilon$\\
+				$0$&$0$&$(A\to B)\to B$&$c_\varepsilon$\\
+				$1^01$&$0$&$A\to B$&$c_\varepsilon y_1^0$\\
+				$1^00$&$1$&$A$&$c_\varepsilon y_1^0$\\
+				$01$&$1$&$A\to B$&$c_\varepsilon c_0$\\
+				$00$&$0$&$B$&$c_\varepsilon c_0$\\
+				$1^011$&$1$&$A$&$c_\varepsilon y_1^0c_{11}$\\
+				$1^010$&$0$&$B$&$c_\varepsilon y_1^0c_{11}$\\
+				$01^01$&$0$&$A$&$c_\varepsilon c_0y_{01}^0$\\
+				$01^00$&$1$&$B$&$c_\varepsilon c_0y_{01}^0$\\
+				$01^11$&$1$&$A$&$c_\varepsilon c_0y_{01}^1$\\
+				$01^10$&$0$&$B$&$c_\varepsilon c_0y_{01}^1$
+			\end{tabular}
+			\end{center}
+	\end{example}
+
+	\begin{definition}[Substitution, Connection]
+		A \emph{substitution} $\sigma_\mu$ assigns to each variable $y_p$ a string of $y_q^i, c_q$. A \emph{$\sigma_\mu$-complementary connection} is a pair of indexed positions $p, q$ of opposite polarity such that $\sigma_\mu$ unifies the propositional and intuitionistic types of $p$ and $q$.
+	\end{definition}
+
+	\begin{example}
+		Consider a substitution $\sigma_\mu$ with $\sigma_\mu(y_1^0) = c_0y_{01}^0$. Then $1^00, 01^00$ is a $\sigma_\mu$-complementary connection.
+	\end{example}
+
+	\begin{definition}
+		Two positions are \emph{$\alpha$-related} if their longest common prefix has polarity $0$ or one is a prefix of the other.
+	\end{definition}
+
+	We can present the indexed positions in matrix form such that the sets containing one entry from each row are precisely the maximal $\alpha$-related sets of indexed positions.
+
+	\begin{example}
+		For the above formula and multiplicity we have the following matrix:
+		\[
+		\begin{bmatrix}
+			\varepsilon &
+			\begin{bmatrix}
+				1 &
+				\begin{bmatrix}
+					\begin{matrix}
+						1^01 & \begin{bmatrix}
+							1^011 & 1^010
+						\end{bmatrix}
+					\end{matrix} \\ 1^00
+				\end{bmatrix} &
+				0 &
+				\begin{bmatrix}
+					01 &
+					\begin{bmatrix}
+						01^01 \\ 01^00
+					\end{bmatrix} &
+					\begin{bmatrix}
+						01^11 \\ 01^10
+					\end{bmatrix} &
+					00
+				\end{bmatrix}
+			\end{bmatrix}
+		\end{bmatrix}
+		\]
+	A maximal $\alpha$-related set is e.g. $\{\varepsilon, 1, 1^00, 0, 01, 01^00, 01^11, 00\}$.
+	\end{example}
+
+	\begin{theorem}[Characterization of validity in minimal logic]
+		A formula $\varphi$ is valid in minimal logic if and only there exists a multiplicity $\mu$, substitution $\sigma_\iota$ and a set of $\sigma_\mu$-complementary connections $C$ such that every maximal set of $\alpha$-related indexed positions contains a connection from $C$.
+	\end{theorem}
+
+	\begin{example}
+		Continuing the above example, consider the substitution $\sigma: y_1^0\mapsto c_0, y_{01}^0\mapsto c_{11}, y_{01}^1\mapsto \varepsilon$. Then the pairs marked in the same color are $\sigma$-complementary connections
+		\[
+		\begin{bmatrix}
+			\varepsilon &
+			\begin{bmatrix}
+				1 &
+				\begin{bmatrix}
+					\begin{matrix}
+						1^01 & \begin{bmatrix}
+							{\color{blue}1^011} & {\color{green}1^010}
+						\end{bmatrix}
+					\end{matrix} \\ {\color{red}1^00}
+				\end{bmatrix} &
+				0 &
+				\begin{bmatrix}
+					01 &
+					\begin{bmatrix}
+						{\color{blue}01^01} \\ {\color{green}01^00}
+					\end{bmatrix} &
+					\begin{bmatrix}
+						{\color{red}01^11} \\ {\color{orange}01^10}
+					\end{bmatrix} &
+					{\color{orange}00}
+				\end{bmatrix}
+			\end{bmatrix}
+		\end{bmatrix}
+		\]
+		and one sees that each maximal $\alpha$-related set contains a connection.
+	\end{example}
+
+	Note that proof search starts with multiplicities $0$ and is connection driven. This gives a relatively efficient algorithm, which we will not discuss here. Note that in the standard connection calculus only the atomic positions are considered, i.e. the matrix would not contain $\varepsilon, 1, 11, 0, 01$. In such a regime the above proof is the only one. However, in our setting we are able to obtain a simpler proof with constant multiplicity 1 and substitutions $y_1^0\mapsto c_0, y_{01}^0\mapsto \varepsilon$:
+	\[
+		\begin{bmatrix}
+			\varepsilon &
+			\begin{bmatrix}
+				1 &
+				\begin{bmatrix}
+					\begin{matrix}
+						{\color{blue}1^01} &
+						\begin{bmatrix}
+							{1^011} & {1^010}
+						\end{bmatrix}
+					\end{matrix} \\ {\color{red}1^00}
+				\end{bmatrix} &
+				0 &
+				\begin{bmatrix}
+					{\color{blue}01} &
+					\begin{bmatrix}
+						{\color{red}01^01} \\ {\color{green}01^00}
+					\end{bmatrix} &
+					{\color{green}00}
+				\end{bmatrix}
+			\end{bmatrix}
+		\end{bmatrix}
+	\]
+
+	Proof theoretically speaking, restricting the positions to atomic ones corresponds precisely to restricting the axiom to atomic formulae. Since we allow arbitrary formulae in our rule $Var$ the chosen representation is closer to what we are working with.
+
+
+	\section{System F}
+	 
+	System F is an extension of the simply typed lambda calculus with polymorphism. It is also known as the second order lambda calculus. The type language, term language and typing rules are extended as follows:
+
+	\[T, U ::= A\mid T\to U\mid \forall A. U\]
+
+	Note that we can define the notions of free and bound variables for types in the same way as for terms. We also extend the notion of substitution to types in the same way as for terms.
+
+	\[t, u ::= x\mid \lambda x. t\mid t\ u\mid t\ T\]
+
+	In addition to the rules for the simply typed lambda calculus we have the following rules, which are applicable for any type variable $A$ that does not occur in $\Gamma$ and well-formed type $T$:
+
+	\begin{center}
+		\AxiomC{$\Gamma\vdash t: T$}
+		\RightLabel{$\forall$-Intro}
+		\UnaryInfC{$\Gamma\vdash \lambda x. t: \forall A. T$}
+		\DisplayProof
+		\hspace*{1cm}
+		\AxiomC{$\Gamma\vdash s: \forall A. B$}
+		\RightLabel{$\forall$-Elim}
+		\UnaryInfC{$\Gamma\vdash s\ T: B[T/A]$}
+		\DisplayProof
+	\end{center}
+
+	\begin{example}
+		The following is the derivation of a polymorphic identity function:
+		\begin{center}
+			\AxiomC{}
+			\RightLabel{Var}
+			\UnaryInfC{$x: A\vdash x: A$}
+			\RightLabel{Abs}
+			\UnaryInfC{$\vdash \lambda x. x: A\to A$}
+			\RightLabel{$\forall$-Intro}
+			\UnaryInfC{$\vdash \lambda y.\lambda x. x: \forall A. A\to A$}
+			\DisplayProof
+		\end{center}
+	\end{example}
+
+	To apply the connection method we need to update the notion of position.
+	\begin{definition}[Position]\label{def:f-position}
+		\hphantom{x}
+		\begin{itemize}
+			\item $\pos_A = \{\varepsilon\}$ for each atomic formula $A$.
+			\item $\pos_{\varphi\to\psi} = \{\varepsilon\}\cup\{0p\mid p\in\pos_\varphi\}\cup\{1p\mid p\in\pos_\psi\}$.
+			\item $\pos_{\forall A. \varphi} = \{\varepsilon\}\cup\{0p\mid p\in\pos_\varphi\}$.
+		\end{itemize}
+		With each position we associate a number of values:
+		\begin{itemize}
+			\item Its \emph{polarity} $\pi(p)$ where $\pi(\varepsilon) = 0$ and $\pi(ip) = \pi(p) \oplus i$ where $\oplus$ is xor.
+			\item Its \emph{propositional type} $\rho(p)$ where $\rho(p) = \rho(\varphi, p, q)$ and\\$\rho(\varphi, \varepsilon, q) = \varphi$, $\rho(\varphi_0\to\varphi_1, ip, q) = \rho(\varphi_i, p, qi)$, \[\rho(\forall A.\varphi, 0p, q) = \begin{cases}
+				\rho(\varphi, p, q0)[c_q/A] & \text{if } \pi(q) = 0\\
+				\rho(\varphi, p, q0)[x_q/A] & \text{if } \pi(q) = 1.
+			\end{cases}\]
+			\item Its \emph{intuitionistic type} $\iota(p)$, which is a string of constants $c_q$ and variables $y_q$ where $\iota(\varepsilon) = \varepsilon$ and
+			\[\iota(pi) = \begin{cases}
+				\iota(p)c_p & \text{if } \pi(p) = 0\\
+				\iota(p)y_p & \text{if } \pi(p) = 1.
+			\end{cases}\]
+		\end{itemize}
+	\end{definition}
+
+	\begin{example}
+		Consider the formula $(\forall A. A)\to A$. The positions and its associated values are:
+		\begin{center}
+			\begin{tabular}[]{c|c|c|c}
+				position & polarity & propositional type & intuitionistic type\\\hline
+				$\varepsilon$ & $0$ & $(\forall A. A)\to A$ & $\varepsilon$\\
+				$1$ & $1$ & $\forall A.A$ & $c_\epsilon$\\
+				$10$ & $1$ & $x_1$ & $c_\epsilon y_1$\\
+				$0$ & $0$ & $A$ & $c_\epsilon$
+			\end{tabular}
+		\end{center}
+	\end{example}
+
+	Finally, we need to extend the notion of multiplicity.
+
+	\begin{definition}(Multiplicity)
+		Let $\Gamma_\varphi^P$ be the set of positions $p$ such that $x_p$ occurs in some propositional type and $\Gamma_\varphi^I$ the set of positions $p$ such that $y_p$ occurs some intuitionistic type. A \emph{multiplicity} $\mu$ consists of two mappings $\mu_P: \Gamma_\varphi^P\to\N$ and $\mu_I: \Gamma_\varphi^I\to\N$.
+	\end{definition}
+
+	Indexed positions are defined analogously to the simply typed case, just that they are indexed by two multiplicities.
+
+	\begin{example}
+		Consider again $(\forall A. A)\to A$ and suppose we have multiplicity $\mu_P = \{1\mapsto 2\}$ and $\mu_I = \{1\mapsto 2\}$. Then the indexed positions are $\{\varepsilon, 1, 1^{0,0}0, 1^{0,1}0, 1^{1,0}0, 1^{1,1}0, 0\}$ and its associated values are:
+		\begin{center}
+			\begin{tabular}[]{c|c|c|c}
+				& $\pi$ & $\rho$ & $\iota$\\\hline
+				$\varepsilon$ & $0$ & $(\forall A. A)\to A$ & $\varepsilon$\\
+				$1$ & $1$ & $\forall A.A$ & $c_\epsilon$\\
+				$1^{0,0}0$ & $0$ & $x_1^0$ & $c_\epsilon y_1^{0}$\\
+				$1^{0,1}0$ & $1$ & $x_1^0$ & $c_\epsilon y_1^{1}$\\
+				$1^{1,0}0$ & $0$ & $x_1^1$ & $c_\epsilon y_1^{0}$\\
+				$1^{1,1}0$ & $1$ & $x_1^1$ & $c_\epsilon y_1^{1}$\\
+				$0$ & $0$ & $A$ & $c_\epsilon$
+			\end{tabular}
+		\end{center}
+	\end{example}
+
+	The notion of substitution and connection are adapted. Then the connection method is sound and complete for System F.
+
+
+	\pagebreak
+
+    \section{The Calculus of Constructions}
+    Before introducing the full Calculus of Inductive Constructions (CIC) we examine its predecessor, the Calculus of Constructions with a hierarchy of universes (CC$^\omega$). As the CIC it comprises a proof calculus for typing judgements of the form~
+
+	\[x_1: A_1, \dots, x_n: A_n\vdash t: A\]
+	but lacks the ability to express full inductive types, in particular equality.
+
+	\subsection{Syntax of CC$^\omega$}
+
+	\begin{definition}[Term]
+		Consider some fixed countable set of \emph{variables} $V$. We define \emph{terms} $t$ and their \emph{free variables} $\fv(t)$ by simultaneous induction as follows:
+		\begin{itemize}
+			\item $ \type_i$ for each $i\in\mathbb\N$ are terms with $\fv( \type_i) = \emptyset$.
+			\item Each $v\in V$ is a term with $\fv(v) = \{v\}$.
+			\item Given terms $A$ and $B$, $A B$ is a term with $\fv(A B) = \fv(A)\cup\fv(B)$.
+			\item Given terms $A$ and $B$ and a variable $x$ the following are also terms:
+			\begin{itemize}
+				\item $\lambda x: A. B$ with $\fv(\lambda x: A. B) = \fv(A)\cup\fv(B)\setminus\{x\}$.
+				\item $\Pi x: A. B$, called \emph{product} with $\fv(\lambda x: A. B) = \fv(A)\cup\fv(B)\setminus\{x\}$.
+			\end{itemize}
+		\end{itemize}
+	\end{definition}
+
+	As usual, we consider terms up to $\alpha$-equivalence, i.e. we identify terms which only differ in the names of bound variables.
+
+	\begin{definition}[Context]
+		\emph{Contexts} $\Gamma$ and their domains $\dom(\Gamma)$ are defined inductively as follows:
+		\begin{itemize}
+			\item $\emptyset$ is a context with domain $\dom(\emptyset) = \emptyset$.
+			\item If $\Gamma$ is a context and $x$ is a variable with $x\notin\dom(\Gamma)$ then $\Gamma, x: A$ is a context with $\dom(\Gamma, x: A) = \dom(\Gamma)\cup\{x\}$.
+		\end{itemize}
+	\end{definition}
+
+	The following notions are central to any type theory:
+
+	\begin{definition}[Substitution]
+		For any terms $A, B$ and variable $x$ we define the \emph{substitution} $A[B/x]$ inductively as follows:
+		\begin{itemize}
+			\item $x[B/x] = B$
+			\item $y[B/x] = y$ for $y \neq x$
+			\item $(A C)[B/x] = (A[B/x])(C[B/x])$
+			\item $(\lambda y: A. C)[B/x] = \lambda y: A[B/x]. C[B/x]$ when $y\neq x$ and $y\notin\fv(B)$.
+			\item $(\Pi y: A. C)[B/x] = \Pi y: A[B/x]. C[B/x]$ when $y\neq x$ and $y\notin\fv(B)$.
+			\item $t[B/x] = t$ for any other term $t$.
+		\end{itemize}
+	\end{definition}
+	
+	\begin{definition}[$\beta$-equivalence]
+		Let $=_\beta$ be the smallest equivalence relation on terms satisfying the following rules:
+		\begin{itemize}
+			\item $(\lambda x: A. B)\ C =_\beta B[C/x]$
+			\item If $A =_\beta A'$ and $B =_\beta B'$ then $A B =_\beta A' B'$.
+			\item If $A =_\beta A'$ and $B =_\beta B'$ then $\lambda x: A. B =_\beta \lambda x: A'. B'$.
+			\item If $A =_\beta A'$ and $B =_\beta B'$ then $\Pi x: A. B =_\beta \Pi x: A'. B'$.
+		\end{itemize}
+	\end{definition}
+	As usual, we can define a $\beta$-reduction which satisfies all the desired properties such as confluence, strong normalization, subject reduction. We write $t\to_\beta t'$ if $t'$ is a $\beta$-normal form of $t$.
+
+	The following typing rules are used to derive typing judgements of the form $\Gamma\vdash t: A$:
+
+	\begin{center}%Axiom-Type
+		\AxiomC{}
+		\RightLabel{Type}
+		\UnaryInfC{$\vdash  \type_i:  \type_{i+1}$}
+		\DisplayProof
+	\end{center}
+	\begin{center}%Weakening
+		\AxiomC{$\Gamma\vdash x: A$}
+		\AxiomC{$\Gamma\vdash B: S$}
+		\RightLabel{Weakening}
+		\BinaryInfC{$\Gamma, y: B\vdash x: A$}
+		\DisplayProof
+	\end{center}
+	where $y\notin\dom(\Gamma)$.
+	\begin{center}%Trivial
+		\AxiomC{$\Gamma\vdash A:  \type_i$}
+		\RightLabel{Trivial}
+		\UnaryInfC{$\Gamma, x: A\vdash x: A$}
+		\DisplayProof
+	\end{center}
+	where $x\notin\dom(\Gamma)$.
+	\begin{center}%PI-Type
+		\AxiomC{$\Gamma\vdash A:  \type_i$}
+		\AxiomC{$\Gamma, x: A\vdash B:  \type_j$}
+		\RightLabel{PI-Type}
+		\BinaryInfC{$\Gamma\vdash \Pi x: A. B:  \type_{imax(i, j)}$}
+		\DisplayProof
+	\end{center}
+	where $imax(i, 0) = 0$ and $imax(i, j) = max(i, j)$ for $j\neq 0$.
+	\begin{center}%Abstraction
+		\AxiomC{$\Gamma, x: A\vdash t: B$}
+		\RightLabel{Abstraction}
+		\UnaryInfC{$\Gamma\vdash \lambda x: A. t: \Pi x: A. B$}
+		\DisplayProof
+	\end{center}
+	\begin{center}%Application
+		\AxiomC{$\Gamma\vdash t: \Pi x: A. B$}
+		\AxiomC{$\Gamma\vdash s: A$}
+		\RightLabel{Application}
+		\BinaryInfC{$\Gamma\vdash t\ s: B[s/x]$}
+		\DisplayProof
+	\end{center}
+	\begin{center}%Conversion
+		\AxiomC{$\Gamma\vdash t: A$}
+		\RightLabel{Conversion}
+		\UnaryInfC{$\Gamma\vdash t: B$}
+		\DisplayProof
+	\end{center}
+	if $A =_\beta B$.
+		
+
+	\bibliographystyle{plain}
+	\bibliography{bibliography}
+
+\end{document}
