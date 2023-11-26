@@ -1,6 +1,6 @@
 \documentclass[11pt]{article}
 
-\title{Connection Calculi for the Type Inhabitation Problem in Barendregt's Lambda Cube}
+\title{A Connection Calculus for the Calculus of Constructions}
 \author{Alexander Pluska}
 
 
@@ -42,6 +42,32 @@
 
 \begin{document}
     \maketitle
+
+	\begin{abstract}
+		The calculus of constructions is a higher-order constructive type theory with dependent types which forms the basis of many interactive theorem provers. We present a sound and complete connection calculus for the type inhabitation problem in the calculus of constructions. This is achieved by extending the connection calculus for minimal implicational logic along the edges of Barendregt's lambda cube and establishes a foundation for the development of an automated theorem prover. We also show how various optimization techniques of connection calculi can be transferred to this setting.
+	\end{abstract}
+	
+	\section{Introduction}
+
+	Automated theorem proving (ATP) is a longstanding and fascinating branch of computer science which was an important driving force in the early development of the field. It focuses on the development of algorithms capable of proving formal mathematical statements.	
+	At the intersection of logic, mathematics, and computer science, ATP plays a crucial role in various applications such as the formal verification and synthesis of hardware and software~\cite{hunt2017industrial,woodcock2009formal,hasan2015formal,aagaard1993verifying,ranise2003applying}. Research in this area has resulted in the development of a wide range of powerful tools such as solvers for various logics, in particular SAT~\cite{balyo2022sat}, SMT~\cite{weber2019smt} and first-order logic~\cite{Sut16}.
+
+	Despite these advancements, complex theorems, as those encountered in mathematical practice, are often too difficult for ATP to handle without significant guidance or cannot even be expressed in the underlying logic. This has lead to the development of interactive theorem provers (ITPs)~\cite{blanchette2011automatic,bertot2013interactive,moura2021lean}, which are tools that assist humans in the process of proving and verifying theorems and have been getting increasing attention from the mathematical community~\cite{hales2017formal,buzzard2020formalising,dahmen2019formalizing,gouezel2019corrected,tao2023}. Most ITPs are based on very expressive logics, such as the calculus of constructions (CoC)~\cite{paulin2015introduction}.
+
+	ITPs have recently garnered significant attention from researchers in the field of large language models (LLMs)~\cite{jiang2022draft,jiang2022thor,yang2023leandojo,polu2020generative}. LLMs have shown tremendous success in a wide range of natural language processing tasks, however, they have traditionally struggled with tasks requiring precise logical reasoning~\cite{chen2023learning,xu2023large}. The exploration of this synergy between ITPs and LLMs could lead to significant advancements in both fields. A notable gap in this emerging field is the lack of a proper baseline to evaluate the performance of LLMs in theorem proving tasks. Establishing an ATP system a baseline is crucial, as it would provide a clear metric for assessing the effectiveness of LLMs when applied to complex logical reasoning tasks.
+
+	While there exist proof automation tools for some ITPs~\cite{blanchette2011automatic}, there is very limited automation in ITPs based on the CoC. The CoC differs from logics at which ATP systems are traditionally aimed at in three major ways: it is higher-order, it is constructive, and it has dependent types. While there are ATP systems for higher-order classical logic~\cite{bentkamp2021superposition} and first-order constructive logic~\cite{otten2008leancop}, there are no ATP systems natively capable of reasoning in higher-order constructive logic let alone with dependent types.
+
+	However, the CoC can be related to a logic in the reach of ATP as part of the $\lambda$-cube~\cite{barendregt1991introduction}, which is a family of typed $\lambda$-calculi with increasing expressive power: The CoC is the top right corner of the $\lambda$-cube and is the most expressive of the calculi. On the other hand, the simply typed $\lambda$-calculus (STLC) is the bottom left corner of the $\lambda$-cube and is the least expressive of the calculi. The Curry-Howard correspondence states that the type inhabitation in the STLC corresponds to the validity problem in minimal implicational logic~\cite{de1995curry}, a logic which can be decided by a connection calculus - an established ATP technique. Extending the connection calculus incrementally along the $\lambda$-cube would therefore give us a connection calculus for the CoC. This is the approach we take in this paper. Our contributions are as follows:
+	\begin{itemize}
+		\item We establish a connection calculus for the type inhabitation problem in the simply typed lambda calculus.
+		\item Then, we extend it along the edges of the $\lambda$-cube to system F, system F$\omega$ and finally to the calculus of constructions.
+		\item Furthermore, we show that the connection calculi are sound and complete for the type inhabitation problem in their respective type theory.
+		\item Finally, we sketch how various optimizations of connection calculi used in practice can be transferred to our setting.
+	\end{itemize}
+	This establishes a foundation for the development of an ATP system for the CoC based on the connection calculus, which is the subject of future work.
+
+
 
 	\section{The untyped lambda calculus}
 
